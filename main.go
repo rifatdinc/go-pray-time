@@ -1,6 +1,8 @@
 package main
 
 import (
+	Pray "Pray/Data"
+	Utils "Pray/Utils"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -10,25 +12,6 @@ import (
 	"strings"
 	"time"
 )
-
-type PrayTime []struct {
-	DayOfYear          string `json:"DayOfYear"`
-	DayOfYearNumber    int    `json:"DayOfYearNumber"`
-	RemainingSeconds   string `json:"RemainingSeconds"`
-	Date               string `json:"Date"`
-	Fajr               string `json:"Fajr"`
-	FajrTimeControl    bool   `json:"FajrTimeControl"`
-	Tulu               string `json:"Tulu"`
-	TuluTimeControl    bool   `json:"TuluTimeControl"`
-	Zuhr               string `json:"Zuhr"`
-	ZuhrTimeControl    bool   `json:"ZuhrTimeControl"`
-	Asr                string `json:"Asr"`
-	AsrTimeControl     bool   `json:"AsrTimeControl"`
-	Maghrib            string `json:"Maghrib"`
-	MaghribTimeControl bool   `json:"MaghribTimeControl"`
-	Isha               string `json:"Isha"`
-	IshaTimeControl    bool   `json:"IshaTimeControl"`
-}
 
 func Deneme() string {
 
@@ -57,7 +40,6 @@ func Deneme() string {
 	if err != nil {
 		log.Println(err)
 	}
-
 	defer resp.Body.Close()
 
 	bodyText, err := ioutil.ReadAll(resp.Body)
@@ -65,11 +47,13 @@ func Deneme() string {
 		log.Println(err)
 	}
 
+	Pray.OpenData(string(bodyText))
+
 	return string(bodyText)
 }
 
 func main() {
-
+	Utils.TimeControl()
 	shouldReturn, date := findPraytime()
 	s := strings.Split(shouldReturn, ":")
 	prayDate := strings.Split(turkishDate(date), " ")
@@ -84,24 +68,23 @@ func main() {
 	out := time.Time{}.Add(time.Duration(prayTime.Sub(timeNow)))
 	outs := strings.Split(out.Format("15:04"), " ")
 	fmt.Println(outs)
+
 }
 
 func findPraytime() (string, string) {
-	Deneme()
-	var pTime PrayTime
+	var pTime Utils.PrayTime
 	json.Unmarshal([]byte(Deneme()), &pTime)
-	fmt.Println(pTime)
 	for _, v := range pTime {
-		if v.AsrTimeControl {
-			return v.Asr, v.Date
-		} else if v.IshaTimeControl {
-			return v.Isha, v.Date
-		} else if v.MaghribTimeControl {
-			return v.Maghrib, v.Date
-		} else if v.TuluTimeControl {
+		if v.FajrTimeControl {
 			return v.Tulu, v.Date
-		} else if v.ZuhrTimeControl {
+		} else if v.TuluTimeControl {
 			return v.Zuhr, v.Date
+		} else if v.ZuhrTimeControl {
+			return v.Asr, v.Date
+		} else if v.AsrTimeControl {
+			return v.Maghrib, v.Date
+		} else if v.MaghribTimeControl {
+			return v.Isha, v.Date
 		} else {
 			return v.Fajr, v.Date
 		}
@@ -110,10 +93,11 @@ func findPraytime() (string, string) {
 }
 
 func turkishDate(date string) string {
+
 	theTime := date
-	fmt.Println(theTime)
+
 	month := strings.Split(theTime, " ")
-	fmt.Println(month)
+
 	switch month[1] {
 	case "Ocak":
 		str := strings.Replace(theTime, "Ocak", "01", -1)

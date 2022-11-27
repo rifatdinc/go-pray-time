@@ -1,3 +1,3 @@
-module pray/v2
+module Pray
 
-go 1.18
+go 1.19
