@@ -1,1 +1,20 @@
-[{"DayOfYear":"331","DayOfYearNumber":331,"RemainingSeconds":"0","Date":"27 Kasım 2022","Fajr":"06:24","FajrTimeControl":false,"Tulu":"07:53","TuluTimeControl":false,"Zuhr":"12:53","ZuhrTimeControl":false,"Asr":"15:20","AsrTimeControl":false,"Maghrib":"17:42","MaghribTimeControl":false,"Isha":"19:06","IshaTimeControl":false}]
+[
+    {
+        "DayOfYear": "332",
+        "DayOfYearNumber": 332,
+        "RemainingSeconds": "0",
+        "Date": "28 Kasım 2022",
+        "Fajr": "06:25",
+        "FajrTimeControl": false,
+        "Tulu": "07:54",
+        "TuluTimeControl": false,
+        "Zuhr": "12:53",
+        "ZuhrTimeControl": false,
+        "Asr": "15:20",
+        "AsrTimeControl": false,
+        "Maghrib": "17:42",
+        "MaghribTimeControl": false,
+        "Isha": "19:06",
+        "IshaTimeControl": false
+    }
+]
