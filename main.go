@@ -23,6 +23,6 @@ func main() {
 	prayTime := time.Date(prayYear, time.Month(prayMonth), prayDay, prayHour, prayMin, 0, 0, time.UTC)
 	out := time.Time{}.Add(time.Duration(prayTime.Sub(timeNow)))
 	outs := strings.Split(out.Format("15:04"), " ")
-	fmt.Println(outs)
+	fmt.Println(outs[0])
 
 }

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
+	"os"
 	"strings"
 	"time"
 )
@@ -32,14 +32,20 @@ type PrayTime []struct {
 }
 
 func TimeControl() {
+
 	data, err := ioutil.ReadFile("PrayTime.json")
+
 	if err != nil {
-		log.Fatal(err)
+		// if not file PrayTime.json then download
+		Pray.OpenData(Pray.Deneme())
 	}
 
 	var pTime PrayTime
 
 	json.Unmarshal([]byte(string(data)), &pTime)
+
+	newLayout := "15:04"
+	s := time.Now().Format(newLayout)
 
 	for _, v := range pTime {
 
@@ -47,8 +53,48 @@ func TimeControl() {
 		file := TurkishDate(v.Date)
 
 		if now == file {
-			fmt.Println("example")
-			ResultSame = true
+			ResultSame = false
+			Isha, _ := time.Parse(newLayout, v.Isha)
+			Fajr, _ := time.Parse(newLayout, v.Fajr)
+			Zuhr, _ := time.Parse(newLayout, v.Zuhr)
+			Tulu, _ := time.Parse(newLayout, v.Tulu)
+			Asr, _ := time.Parse(newLayout, v.Asr)
+			Maghrib, _ := time.Parse(newLayout, v.Maghrib)
+			end, _ := time.Parse(newLayout, s)
+
+			// IshaToFajr := inTimeSpan(Isha, Fajr, end)
+			FajrToTulu := inTimeSpan(Fajr, Tulu, end)
+			TuluToZuhr := inTimeSpan(Tulu, Zuhr, end)
+			ZuhrToAsr := inTimeSpan(Zuhr, Asr, end)
+			AsrToMaghrib := inTimeSpan(Asr, Maghrib, end)
+			MaghribToIsha := inTimeSpan(Maghrib, Isha, end)
+
+			if FajrToTulu {
+
+				pTime[0].FajrTimeControl = true
+				ChangeFileWrite(pTime)
+
+			} else if TuluToZuhr {
+
+				pTime[0].TuluTimeControl = true
+				ChangeFileWrite(pTime)
+
+			} else if ZuhrToAsr {
+
+				pTime[0].ZuhrTimeControl = true
+				ChangeFileWrite(pTime)
+
+			} else if AsrToMaghrib {
+
+				pTime[0].AsrTimeControl = true
+				ChangeFileWrite(pTime)
+
+			} else if MaghribToIsha {
+
+				pTime[0].MaghribTimeControl = true
+				ChangeFileWrite(pTime)
+
+			}
 			return
 		}
 	}
@@ -57,6 +103,24 @@ func TimeControl() {
 
 		Pray.OpenData(Pray.Deneme())
 	}
+}
+
+func ChangeFileWrite(pTime PrayTime) {
+	jsonData, _ := json.Marshal(pTime)
+	file, _ := os.Create("PrayTime.json")
+	defer file.Close()
+	if _, err := file.Write(jsonData); err != nil {
+		fmt.Println(err)
+	}
+}
+func inTimeSpan(start, end, check time.Time) bool {
+	if start.Before(end) {
+		return !check.Before(start) && !check.After(end)
+	}
+	if start.Equal(end) {
+		return check.Equal(start)
+	}
+	return !start.After(check) || !end.Before(check)
 }
 
 func TurkishDate(date string) string {

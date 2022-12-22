@@ -50,7 +50,5 @@ func Deneme() string {
 		log.Println(err)
 	}
 
-	// Pray.OpenData(string(bodyText))
-
 	return string(bodyText)
 }
