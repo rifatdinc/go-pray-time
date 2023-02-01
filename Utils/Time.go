@@ -2,6 +2,7 @@ package utils
 
 import (
 	Pray "Pray/Data"
+	Structs "Pray/Structs"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -12,114 +13,115 @@ import (
 
 var ResultSame bool
 
-type PrayTime []struct {
-	DayOfYear          string `json:"DayOfYear"`
-	DayOfYearNumber    int    `json:"DayOfYearNumber"`
-	RemainingSeconds   string `json:"RemainingSeconds"`
-	Date               string `json:"Date"`
-	Fajr               string `json:"Fajr"`
-	FajrTimeControl    bool   `json:"FajrTimeControl"`
-	Tulu               string `json:"Tulu"`
-	TuluTimeControl    bool   `json:"TuluTimeControl"`
-	Zuhr               string `json:"Zuhr"`
-	ZuhrTimeControl    bool   `json:"ZuhrTimeControl"`
-	Asr                string `json:"Asr"`
-	AsrTimeControl     bool   `json:"AsrTimeControl"`
-	Maghrib            string `json:"Maghrib"`
-	MaghribTimeControl bool   `json:"MaghribTimeControl"`
-	Isha               string `json:"Isha"`
-	IshaTimeControl    bool   `json:"IshaTimeControl"`
-}
-
 func TimeControl() {
 
 	data, err := ioutil.ReadFile("PrayTime.json")
 
 	if err != nil {
-		// if not file PrayTime.json then download
-		Pray.OpenData(Pray.Deneme())
+		Pray.OpenData(Pray.FindPrayerTime())
 	}
-
-	var pTime PrayTime
+	
+	pTime := Structs.PrayTime{}
 
 	json.Unmarshal([]byte(string(data)), &pTime)
 
-	newLayout := "15:04"
-	s := time.Now().Format(newLayout)
+	now, newLayout, currentTime := setTime()
 
 	for _, v := range pTime {
 
-		now := time.Now().Format("02 01 2006")
-		file := TurkishDate(v.Date)
+		if now.Format("02 01 2006") == TurkishDate(v.Date) {
 
-		if now == file {
 			ResultSame = false
-			Isha, _ := time.Parse(newLayout, v.Isha)
-			Fajr, _ := time.Parse(newLayout, v.Fajr)
-			Zuhr, _ := time.Parse(newLayout, v.Zuhr)
-			Tulu, _ := time.Parse(newLayout, v.Tulu)
-			Asr, _ := time.Parse(newLayout, v.Asr)
-			Maghrib, _ := time.Parse(newLayout, v.Maghrib)
-			end, _ := time.Parse(newLayout, s)
 
-			// IshaToFajr := inTimeSpan(Isha, Fajr, end)
-			FajrToTulu := inTimeSpan(Fajr, Tulu, end)
-			TuluToZuhr := inTimeSpan(Tulu, Zuhr, end)
-			ZuhrToAsr := inTimeSpan(Zuhr, Asr, end)
-			AsrToMaghrib := inTimeSpan(Asr, Maghrib, end)
-			MaghribToIsha := inTimeSpan(Maghrib, Isha, end)
-
-			if FajrToTulu {
-
-				pTime[0].FajrTimeControl = true
-				ChangeFileWrite(pTime)
-
-			} else if TuluToZuhr {
-
-				pTime[0].TuluTimeControl = true
-				ChangeFileWrite(pTime)
-
-			} else if ZuhrToAsr {
-
-				pTime[0].ZuhrTimeControl = true
-				ChangeFileWrite(pTime)
-
-			} else if AsrToMaghrib {
-
-				pTime[0].AsrTimeControl = true
-				ChangeFileWrite(pTime)
-
-			} else if MaghribToIsha {
-
-				pTime[0].MaghribTimeControl = true
-				ChangeFileWrite(pTime)
-
+			prayerTimes := map[string]time.Time{
+				"Isha":    parseTime(v.Isha, newLayout),
+				"Fajr":    parseTime(v.Fajr, newLayout),
+				"Zuhr":    parseTime(v.Zuhr, newLayout),
+				"Tulu":    parseTime(v.Tulu, newLayout),
+				"Asr":     parseTime(v.Asr, newLayout),
+				"Maghrib": parseTime(v.Maghrib, newLayout),
+				"Current": parseTime(currentTime, newLayout),
 			}
+
+			checkTime(prayerTimes, pTime)
+
+			ChangeFileWrite(pTime)
+
 			return
 		}
 	}
-
 	if !ResultSame {
-
-		Pray.OpenData(Pray.Deneme())
+		Pray.OpenData(Pray.FindPrayerTime())
 	}
 }
 
-func ChangeFileWrite(pTime PrayTime) {
+func setTime() (time.Time, string, string) {
+
+	now := time.Now()
+
+	newLayout := "15:04"
+
+	currentTime := now.Format(newLayout)
+
+	return now, newLayout, currentTime
+
+}
+
+func checkTime(prayerTimes map[string]time.Time, pTime Structs.PrayTime) {
+
+	if inTimeSpan(prayerTimes["Fajr"], prayerTimes["Tulu"], prayerTimes["Current"]) {
+
+		pTime[0].FajrTimeControl = true
+
+	} else if inTimeSpan(prayerTimes["Tulu"], prayerTimes["Zuhr"], prayerTimes["Current"]) {
+
+		pTime[0].TuluTimeControl = true
+
+	} else if inTimeSpan(prayerTimes["Zuhr"], prayerTimes["Asr"], prayerTimes["Current"]) {
+
+		pTime[0].ZuhrTimeControl = true
+
+	} else if inTimeSpan(prayerTimes["Asr"], prayerTimes["Maghrib"], prayerTimes["Current"]) {
+
+		pTime[0].AsrTimeControl = true
+
+	} else if inTimeSpan(prayerTimes["Maghrib"], prayerTimes["Isha"], prayerTimes["Current"]) {
+
+		pTime[0].MaghribTimeControl = true
+	}
+
+}
+
+func parseTime(t string, layout string) time.Time {
+
+	parsedTime, _ := time.Parse(layout, t)
+
+	return parsedTime
+}
+
+func ChangeFileWrite(pTime Structs.PrayTime) {
+
 	jsonData, _ := json.Marshal(pTime)
+
 	file, _ := os.Create("PrayTime.json")
+
 	defer file.Close()
+
 	if _, err := file.Write(jsonData); err != nil {
 		fmt.Println(err)
 	}
 }
+
 func inTimeSpan(start, end, check time.Time) bool {
+
 	if start.Before(end) {
 		return !check.Before(start) && !check.After(end)
 	}
+
 	if start.Equal(end) {
 		return check.Equal(start)
 	}
+
 	return !start.After(check) || !end.Before(check)
 }
 
@@ -172,8 +174,11 @@ func TurkishDate(date string) string {
 }
 
 func FindPraytime() (string, string) {
-	var pTime PrayTime
-	json.Unmarshal([]byte(Pray.Deneme()), &pTime)
+
+	var pTime Structs.PrayTime
+
+	json.Unmarshal([]byte(Pray.FindPrayerTime()), &pTime)
+
 	for _, v := range pTime {
 		if v.FajrTimeControl {
 			return v.Tulu, v.Date
@@ -189,5 +194,6 @@ func FindPraytime() (string, string) {
 			return v.Fajr, v.Date
 		}
 	}
+
 	return "", ""
 }

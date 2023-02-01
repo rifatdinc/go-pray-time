@@ -10,13 +10,14 @@ import (
 func OpenData(data string) {
 
 	err := ioutil.WriteFile("PrayTime.json", []byte(data), 0644)
+	
 	if err != nil {
 		log.Fatal(err)
 	}
 
 }
 
-func Deneme() string {
+func FindPrayerTime() string {
 
 	bodyInfo := strings.NewReader("distric=859&Year=2022&Day=325")
 
@@ -36,16 +37,19 @@ func Deneme() string {
 	req.Header.Set("Sec-Ch-Ua", "\"Google Chrome\";v=\"107\", \"Chromium\";v=\"107\", \"Not=A?Brand\";v=\"24\"")
 	req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
 	req.Header.Set("Sec-Ch-Ua-Platform", "\"Linux\"")
+
 	if err != nil {
 		log.Fatalln(err)
 	}
 	resp, err := http.DefaultClient.Do(req)
+
 	if err != nil {
 		log.Println(err)
 	}
 	defer resp.Body.Close()
 
 	bodyText, err := ioutil.ReadAll(resp.Body)
+
 	if err != nil {
 		log.Println(err)
 	}
